@@ -1,0 +1,6 @@
+<!DOCTYPE RCC><RCC version="1.0">
+<qresource>
+    <file>Images/location_end.png</file>
+    <file>Images/location_start.png</file>
+</qresource>
+</RCC>

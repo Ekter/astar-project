@@ -3,6 +3,11 @@
 
 #include <QWidget>
 #include <QPainter>
+#include <cmath>
+#include <QPolygon>
+#include <QGraphicsEllipseItem>
+
+#define earthRadius 6371000
 
 class Vertex : public QWidget
 {
@@ -11,10 +16,9 @@ public:
     Vertex(QWidget *parent = nullptr) : QWidget(parent), x(0), y(0), ID(0) {}
 
     // Parameterized constructor
-    Vertex(double xCoord, double yCoord, double ID=0, QWidget *parent = nullptr);
+    Vertex(double xCoord, double yCoord, double ID, QGraphicsEllipseItem *vertex_display, QWidget *parent = nullptr);
 
-    // Copy constructor
-    //Vertex(const Vertex& other) : x(other.x), y(other.y), ID(other.ID) {}
+    Vertex(const Vertex& vertex);
 
     // Getters for x and y
     double getX() const;
@@ -24,13 +28,17 @@ public:
     // Setters for x and y
     void setX(double newX);
     void setY(double newY);
-    void setID(double newID);
 
+    QGraphicsEllipseItem* vertex_display;
 
 private:
     double x;
     double y;
     double ID;
+
+
+
+
 };
 
 #endif // VERTEX_H
