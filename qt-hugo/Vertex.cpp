@@ -29,9 +29,3 @@ void Vertex::setY(double newY)
 {
     y = newY;
 }
-
-void Vertex::setID(double newID)
-{
-    ID = newID;
-}
-
