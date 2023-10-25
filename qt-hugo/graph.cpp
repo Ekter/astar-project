@@ -154,8 +154,8 @@ void Graph::loadMap() {
                         double longitude = parts.at(2).toDouble();
                         double latitude = parts.at(3).toDouble();
 
-                        Vertex vertex;
-                        latLonToXY(&vertex,longitude, latitude);
+                        Vertex vertex();
+                        latLonToXY(&vertex, longitude, latitude);
 
                         minX = qMin(minX, vertex.getX());
                         maxX = qMax(maxX, vertex.getX());
@@ -205,3 +205,86 @@ void Graph::resetZoom()
     view->resetTransform();
 }
 
+void astar(uint32_t vstart, uint32_t vend) {
+    container<uint32_t> active_queue;
+    set<uint32_t> closed_set;
+    set_all_vertex_weight_to_max_value();
+    // ID of the start vertex
+    active_queue.push_end(vstart);
+    do {
+// from the current vertex in the front of the queue
+// compute all vertices reachable in 1 step
+        auto vcurrent = active_queue.pop_front();
+        if (vcurrent == vend) break;
+            closed_set.add(vcurrent);
+        for(vnext in adjacency_list of vcurrent) {
+            if (vnext is in closed_set) {
+                continue;
+}
+    auto g = vcurrent.get_weight() + get_edge_w(vcurrent, vnext);
+    auto f = g + heuristic_distance_estimator(vnext, vend);
+    if (vnext is not already in active_queue) {
+    vnext.set_weight(g);
+    vnext.set_estimate(f);
+    active_queue.push_end(vnext);
+    } else if (f < vnext.get_estimate()) {
+        vnext.set_weight(g);
+    vnext.set_estimate(f);
+}
+}
+// the partial sort ensure that the vertex with the smallest estimate
+// is the first on the active_queue
+active_queue.partial_sort_on_estimate();
+} while (active_queue.size() != 0)
+}
+
+Graph::dijkstra(uint32_t vstart, uint32_t vend) {
+container<uint32_t> active_queue;
+set<uint32_t> closed_set;
+set_all_vertex_weight_to_max_value();
+// ID of the start vertex
+active_queue.push_end(vstart);
+do {
+// from the current vertex in the front of the queue
+// compute all vertices reachable in 1 step
+auto vcurrent = active_queue.pop_front();
+if (vcurrent == vend) break;
+closed_set.add(vcurrent);
+for(vnext in adjacency list of vcurrent) {
+if (vnext is in closed_set) {
+continue;
+}
+auto w = vcurrent.get_weight() + get_edge_w(vcurrent, vnext);
+if (vnext is not already in active_queue) {
+vnext.set_weight(w);
+active_queue.push_end(vnext);
+} else if (w < vnext.get_weight()) {
+vnext.set_weight(w);
+}
+}
+// the partial sort ensure that the vertex with the smallest w
+// is the first on the active_queue
+active_queue.partial_sort();
+} while (active_queue.size() != 0)
+}
+
+Graph::bfs(uint32_t vstart) {
+container<uint32_t> active_queue;
+set<uint32_t> closed_set;
+// ID of the start vertex
+active_queue.push_end(vstart);
+do {
+// from the current vertex in the front of the queue
+// compute all vertices reachable in 1 step
+auto vcurrent = active_queue.pop_front();
+closed_set.add(vcurrent);
+for(vnext in adjacency_list of vcurrent) {
+if (vnext is in closed_set) {
+continue;
+}
+if (vnext is not already in active_queue) {
+active_queue.push_end(vnext);
+}
+}
+} while (active_queue.size() != 0)
+}

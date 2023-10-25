@@ -37,6 +37,10 @@ public slots:
     void resetZoom(void);
     void displayVertex(const Vertex& vertex);
     void pushButtonCreation(void);
+    void astar(uint32_t vstart, uint32_t vend);
+    void dijkstra(uint32_t vstart, uint32_t vend);
+    void bfs(uint32_t vstart);
+
 
 private:
     QGraphicsView *view;
