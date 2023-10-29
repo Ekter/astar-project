@@ -1,14 +1,14 @@
 #include "graph.h"
 
-Graph:: Graph()
+Graph:: Graph(int size)
 {
-    //vertices.push_back(Vertex(70,30,1234));
-
+    vertices.resize(size);
 
 }
 
 void Graph::addVertexToGraph(const Vertex& vertex){
-
+    vertices[vertex.getID()]=vertex;
 }
+
 
 

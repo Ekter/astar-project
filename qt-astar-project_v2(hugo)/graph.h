@@ -1,36 +1,28 @@
 #ifndef GRAPH_H
 #define GRAPH_H
 
-#include <QWidget>
-#include <QPainter>
-#include <QMainWindow>
-#include <QSize>
-#include <QGraphicsView>
-#include <QGraphicsScene>
-#include <QGraphicsRectItem>
-#include <QLabel>
 #include <iostream>
-#include <QFileDialog>
-#include <QMessageBox>
-#include <QPushButton>
-#include <QGraphicsProxyWidget>
+#include <vector>
+#include <map>
+#include <utility>
 
 #include "Vertex.h"
 
-class Graph : public QGraphicsScene
+
+
+class Graph
 {
 public:
-    Graph();
+    Graph(int size);
     void addVertexToGraph(const Vertex& vertex);
-    std::vector<Vertex> vertices;
-
-public slots:
-
+    void addEdgeToGraph(const Vertex& vertex1, const Vertex& vertex2, double distance);
 
 private:
 
-    Vertex vertex_test;
-    //std::vector<Edge> edges;
+    std::vector<uint32_t> vertices;
+    std::map<pair<uint32_t, uint32_t>, double> edges;
+
+        //std::vector<Edge> edges;
 };
 
 #endif // GRAPH_H

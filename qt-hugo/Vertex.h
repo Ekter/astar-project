@@ -1,9 +1,7 @@
 #ifndef VERTEX_H
 #define VERTEX_H
 
-#include <pair>
-#include <QWidget>
-#include <QPainter>
+#include <utility>
 #define earthRadius 6371000
 #define M_PI 3.14159265358979323846
 class Vertex : public QWidget
