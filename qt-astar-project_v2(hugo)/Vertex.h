@@ -9,29 +9,32 @@
 class Vertex
 {
 public:
-    // Default constructor
-    Vertex(int id=0,double latitude=0, double longitude=0) : ID(id) {
+    Vertex(int id = 0, double latitude = 0, double longitude = 0)
+        : ID(id == 0 ? idCounter++ : id), // Initialize the const member variable here
+          x(earthRadius * longitude * M_PI / 180.0),
+          y(earthRadius * log(tan(M_PI / 4 + latitude * M_PI / 360.0)))
+    { }
 
-    double latRad  = latitude  * M_PI / 180.0;
-    double longRad = longitude * M_PI / 180.0;
-
-    x=earthRadius*longRad;
-    y=earthRadius*log(tan(M_PI/4 + latRad/2));
-
+    Vertex &Vertex::operator=(const Vertex &other)
+    {
+        if (this != &other)
+        {
+            this->x = other.x;
+            this->y = other.y;
+            this->neighbours = other.neighbours;
+        }
+        return *this;
     }
-
-    // Copy constructor
-    //Vertex(const Vertex& other) : x(other.x), y(other.y), ID(other.ID) {}
 
     // Getters for x and y
     std::pair<double, double> getXY() const;
     int getID() const;
 
-    // Setters for x and y
-    void setXY(double newX, double newY);
-    void getNeighbours();
+    std::vector<u_int32_t> getNeighbours() const { return neighbours; }
+    void addNeighbour(int neighbourID) { neighbours.push_back(neighbourID); }
 
 private:
+    static int idCounter;
     double x;
     double y;
     const int ID;
@@ -39,3 +42,5 @@ private:
 };
 
 #endif // VERTEX_H
+
+int Vertex::idCounter = 0;
