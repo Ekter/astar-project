@@ -5,7 +5,7 @@ HEADERS += mainwindow.h view.h \
     vertex.h
 SOURCES += main.cpp \
     graph.cpp \
-    vertex.cpp
+
 SOURCES += mainwindow.cpp view.cpp
 
 QT += widgets
