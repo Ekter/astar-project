@@ -2,6 +2,7 @@
 #define VERTEX_H
 
 #include <cmath>
+#include <cstdint>
 #include <vector>
 #define earthRadius 6378000.137
 #define M_PI 3.14159265358979323846
@@ -24,7 +25,7 @@ public:
     {
     }
 
-    Vertex &Vertex::operator=(const Vertex &other)
+    Vertex &operator=(const Vertex &other)
     {
         if (this != &other)
         {
@@ -47,17 +48,17 @@ public:
     {
         return y;
     }
-    u_int32_t getID() const { return ID_; };
+    uint32_t getID() const { return ID_; };
 
-    std::vector<u_int32_t> getNeighbours() const { return neighbours; }
-    void addNeighbour(u_int32_t neighbourID) { neighbours.push_back(neighbourID); }
+    std::vector<uint32_t> getNeighbours() const { return neighbours; }
+    void addNeighbour(uint32_t neighbourID) { neighbours.push_back(neighbourID); }
 
 private:
     static int idCounter;
     double x;
     double y;
     const int ID_;
-    std::vector<u_int32_t> neighbours;
+    std::vector<uint32_t> neighbours;
 };
 
 #endif // VERTEX_H

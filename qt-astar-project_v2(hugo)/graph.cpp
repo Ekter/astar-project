@@ -12,28 +12,24 @@ void Graph::addVertexToGraph(const Vertex &vertex)
     vertices_[vertex.getID()] = vertex;
 }
 
-void Graph::addEdgeToGraph(const u_int32_t vertex1_id, const u_int32_t vertex2_id, double distance)
+void Graph::addEdgeToGraph(const uint32_t vertex1_id, const uint32_t vertex2_id, double distance)
 {
-    edges_[((u_int64_t)std::min(vertex1_id, vertex2_id)) << 32 + std::max(vertex1_id, vertex2_id)] = distance;
+    edges_[(((uint64_t)std::min(vertex1_id, vertex2_id)) << 32) + std::max(vertex1_id, vertex2_id)] = distance;
 }
 
-double Graph::distanceBetweenVertices(const u_int32_t vertex1_id, const u_int32_t vertex2_id) const
+double Graph::distanceBetweenVertices(const uint32_t vertex1_id, const uint32_t vertex2_id)
 {
-    return edges_[(((u_int64_t)std::min(vertex1_id, vertex2_id)) << 32) + std::max(vertex1_id, vertex2_id)];
+    return edges_[(((uint64_t)std::min(vertex1_id, vertex2_id)) << 32) + std::max(vertex1_id, vertex2_id)];
 }
 
-std::vector<u_int32_t> Graph::getAdjacentVectors(const u_int32_t vertex_id) const
-{
-    return vertices_[vertex_id].getNeighbours();
-}
 
-std::vector<u_int32_t> Graph::astar(u_int32_t vstart, u_int32_t vend)
+std::vector<uint32_t> Graph::astar(uint32_t vstart, uint32_t vend)
 {
-    std::deque<u_int32_t> active_queue;
-    std::set<u_int32_t> closed_set;
-    std::vector<u_int32_t> traversal;
-    setWeights(std::numeric_limits<u_int32_t>::max());
-    setEstimates(std::numeric_limits<u_int32_t>::max());
+    std::deque<uint32_t> active_queue;
+    std::set<uint32_t> closed_set;
+    std::vector<uint32_t> traversal;
+    setWeights(std::numeric_limits<uint32_t>::max());
+    setEstimates(std::numeric_limits<uint32_t>::max());
     // ID of the start vertex
     active_queue.push_back(vstart);
     do
@@ -68,7 +64,7 @@ std::vector<u_int32_t> Graph::astar(u_int32_t vstart, u_int32_t vend)
         }
         // the partial sort ensure that the vertex with the smallest estimate
         // is the first on the active_queue
-        std::partial_sort(active_queue.begin(), active_queue.begin() + 1, active_queue.end(), [this, vcurrent](const u_int32_t v1_id, const u_int32_t v2_id)
+        std::partial_sort(active_queue.begin(), active_queue.begin() + 1, active_queue.end(), [this, vcurrent](const uint32_t v1_id, const uint32_t v2_id)
                           { return getEstimate(v1_id) < getEstimate(v2_id); });
     } while (active_queue.size() != 0);
     {
@@ -79,20 +75,20 @@ std::vector<u_int32_t> Graph::astar(u_int32_t vstart, u_int32_t vend)
     return traversal;
 }
 
-std::vector<u_int32_t> Graph::dijkstra(u_int32_t vstart, u_int32_t vend)
+std::vector<uint32_t> Graph::dijkstra(uint32_t vstart, uint32_t vend)
 {
-    std::deque<u_int32_t> active_queue;
-    std::set<u_int32_t> closed_set;
-    std::vector<u_int32_t> traversal;
+    std::deque<uint32_t> active_queue;
+    std::set<uint32_t> closed_set;
+    std::vector<uint32_t> traversal;
 
-    setWeights(std::numeric_limits<u_int32_t>::max());
+    setWeights(std::numeric_limits<uint32_t>::max());
     // ID of the start vertex
     active_queue.push_back(vstart);
     do
     {
         // from the current vertex in the front of the queue
         // compute all vertices reachable in 1 step
-        u_int32_t vcurrent = active_queue.front();
+        uint32_t vcurrent = active_queue.front();
         active_queue.pop_front();
         if (vcurrent == vend)
             break;
@@ -116,22 +112,22 @@ std::vector<u_int32_t> Graph::dijkstra(u_int32_t vstart, u_int32_t vend)
         }
         // the partial sort ensure that the vertex with the smallest w
         // is the first on the active_queue
-        std::partial_sort(active_queue.begin(), active_queue.begin() + 10, active_queue.end(), [this, vcurrent](const u_int32_t v1_id, const u_int32_t v2_id)
+        std::partial_sort(active_queue.begin(), active_queue.begin() + 10, active_queue.end(), [this, vcurrent](const uint32_t v1_id, const uint32_t v2_id)
                           { return distanceBetweenVertices(vcurrent, v1_id) < distanceBetweenVertices(vcurrent, v2_id); });
     } while (active_queue.size() != 0);
     {
-        u_int32_t vcurrent = active_queue.front();
+        uint32_t vcurrent = active_queue.front();
         active_queue.pop_front();
         traversal.push_back(vcurrent);
     }
     return traversal;
 }
 
-std::vector<u_int32_t> Graph::bfs(u_int32_t vstart, u_int32_t vend)
+std::vector<uint32_t> Graph::bfs(uint32_t vstart, uint32_t vend)
 {
-    std::deque<u_int32_t> active_queue;
-    std::set<u_int32_t> closed_set;
-    std::vector<u_int32_t> traversal;
+    std::deque<uint32_t> active_queue;
+    std::set<uint32_t> closed_set;
+    std::vector<uint32_t> traversal;
 
     // ID of the start vertex
     active_queue.push_back(vstart);
@@ -139,7 +135,7 @@ std::vector<u_int32_t> Graph::bfs(u_int32_t vstart, u_int32_t vend)
     {
         // from the current vertex in the front of the queue
         // compute all vertices reachable in 1 step
-        u_int32_t vcurrent = active_queue.front();
+        uint32_t vcurrent = active_queue.front();
         active_queue.pop_front();
         closed_set.insert(vcurrent);
         for (auto &&vnext : getAdjacentVectors(vcurrent))
@@ -155,7 +151,7 @@ std::vector<u_int32_t> Graph::bfs(u_int32_t vstart, u_int32_t vend)
         }
     } while (!active_queue.empty());
     {
-        u_int32_t vcurrent = active_queue.front();
+        uint32_t vcurrent = active_queue.front();
         active_queue.pop_front();
         traversal.push_back(vcurrent);
     }
