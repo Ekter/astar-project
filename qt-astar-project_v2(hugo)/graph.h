@@ -8,13 +8,16 @@
 #include <deque>
 #include <set>
 
-#include "Vertex.h"
+#include "vertex.h"
 
 class Graph
 {
 public:
     Graph(int size);
-    void addVertexToGraph(const Vertex &vertex);
+    void addVertexToGraph(const Vertex& vertex);
+    //std::vector<Vertex> vertices;
+    std::vector<Edge> edges;
+
     void addEdgeToGraph(const u_int32_t vertex1, const u_int32_t vertex2, double distance);
     double distanceBetweenVertices(u_int32_t vertex1, u_int32_t vertex2) const;
     std::vector<u_int32_t> getAdjacentVectors(u_int32_t vertex_id) const {return vertices_[vertex_id].getNeighbours();};
