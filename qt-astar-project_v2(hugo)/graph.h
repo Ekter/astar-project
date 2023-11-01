@@ -21,7 +21,7 @@ public:
     void addEdgeToGraph(const u_int32_t vertex1, const u_int32_t vertex2, double distance);
     double distanceBetweenVertices(u_int32_t vertex1, u_int32_t vertex2) const;
     std::vector<u_int32_t> getAdjacentVectors(u_int32_t vertex_id) const {return vertices_[vertex_id].getNeighbours();};
-    Vertex getVertex(u_int32_t) const;
+    Vertex getVertex(u_int32_t v_id) const {return vertices_[v_id];};
     void setEstimate(u_int32_t v_id, double estimate) {estimates_[v_id] = estimate;};
     double getEstimate(u_int32_t v_id) {return estimates_[v_id];};
     std::vector<u_int32_t> bfs(u_int32_t vstart_id, u_int32_t vend_id);
@@ -49,9 +49,7 @@ private:
     };
     double heuristic_distance_estimator(u_int32_t v1_id, u_int32_t v2_id) const
     {
-        std::pair<double, double> c1 = vertices_[v1_id].getXY();
-        std::pair<double, double> c2 = vertices_[v2_id].getXY();
-        return sqrt(pow(c1.first - c2.first, 2) + pow(c1.second - c2.second, 2));
+        return sqrt(pow(vertices_[v1_id].getX() - vertices_[v2_id].getX(), 2) + pow(vertices[v1_id].getY() - vertices_[v2_id].getY(), 2));
     };
     
 };
