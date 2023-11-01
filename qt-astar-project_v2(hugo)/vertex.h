@@ -4,6 +4,7 @@
 #include <cmath>
 #include <cstdint>
 #include <vector>
+#include <QDebug>
 #define earthRadius 6378000.137
 #define M_PI 3.14159265358979323846
 
@@ -18,51 +19,61 @@ struct Edge
 class Vertex
 {
 public:
-    int idCounter = 0;
-    Vertex(int id = 0, double latitude = 0, double longitude = 0)
-        : ID_(id == 0 ? idCounter++ : id), // Initialize the const member variable here
-          x(earthRadius * longitude * M_PI / 180.0),
-          y(earthRadius * log(tan(M_PI / 4 + latitude * M_PI / 360.0)))
+    uint32_t idCounter = 0;
+    Vertex(uint32_t id = -1, double latitude = 0, double longitude = 0)
+        : ID_(id == -1 ? idCounter++ : id), // Initialize the const member variable here
+          x_(earthRadius * longitude * M_PI / 180.0),
+          y_(earthRadius * log(tan(M_PI / 4 + latitude * M_PI / 360.0))),
+          initialized{false}
+
     {
     }
 
     Vertex &operator=(const Vertex &other)
     {
-        if (this != &other)
-        {
-            this->x = other.x;
-            this->y = other.y;
-            this->neighbours = other.neighbours;
-        }
+        this->initialized = true;
+        this->x_ = other.x_;
+        this->y_ = other.y_;
+        this->neighbours = other.neighbours;
         return *this;
     }
 
-    Vertex(const Vertex &vertex) : x(vertex.x), y(vertex.y), ID_(vertex.ID_){};
+    Vertex(const Vertex &vertex) : x_(vertex.x_), y_(vertex.y_), ID_(vertex.ID_){};
 
     // Getters for x and y
     double getX() const
     {
-        return x;
+        return x_;
     }
 
     double getY() const
     {
-        return y;
+        return y_;
+    }
+
+    // Setters for x and y
+    void setX(double x)
+    {
+        x_ =x;
+    }
+
+    void setY(double y)
+    {
+        y_=y;
     }
     uint32_t getID() const { return ID_; };
 
     std::vector<uint32_t> getNeighbours() const { return neighbours; }
     void addNeighbour(uint32_t neighbourID) { neighbours.push_back(neighbourID); }
-
+    bool initialized;
 private:
 
-    double x;
-    double y;
-    const int ID_;
+    double x_;
+    double y_;
+    const uint32_t ID_;
     std::vector<uint32_t> neighbours;
+
 };
-//int Vertex::idCounter = 0;
 
 #endif // VERTEX_H
 
-int Vertex::idCounter = 0;

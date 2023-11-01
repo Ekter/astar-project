@@ -131,7 +131,8 @@ public:
     void drawMap();
     void loadMap();
     Vertex* getVertexByID(const double& ID);
-    void addFlagsStartEnd(void);
+    void addFlagsStart(void);
+    void addFlagsEnd(void);
 
 
 
@@ -146,6 +147,8 @@ public slots:
     void zoomOutBy(int level);
     void zoomOutAction(void);
     void zoomInAction(void);
+    void handleAlgorithmsSelection(int i);
+    void runFindPath(void);
 
 
 private slots:
@@ -164,6 +167,9 @@ private:
     QToolButton *printButton;
     QToolButton *resetButton;
     QSlider *zoomSlider;
+    QToolButton *resultButton;
+    QString selectedOption = "Astar";
+    QComboBox *combo;
     Graph *graph = nullptr;
     QGraphicsScene scene;
     MapBoundaries mapBoundaries;

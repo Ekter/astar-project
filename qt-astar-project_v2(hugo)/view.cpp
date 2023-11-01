@@ -58,23 +58,26 @@ void GraphicsView::mousePressEvent(QMouseEvent *event) {
                qDebug() << "mindistance" << minDistance ;
 
                for (unsigned int i=0; i< vertices_display.size(); i++){
+                   if (!(vertices_display[i] == nullptr)){
+                       double x = static_cast<double>(scenePos.x());
+                       double y = static_cast<double>(scenePos.y());
 
-                   double x = static_cast<double>(scenePos.x());
-                   double y = static_cast<double>(scenePos.y());
+                       double deltaX = x - vertices_display[i]->vertex_->getX() ;
+                       double deltaY = y - vertices_display[i]->vertex_->getY();
 
-                   double deltaX = x - vertices_display[i]->vertex_->getX() ;
-                   double deltaY = y - vertices_display[i]->vertex_->getY();
+                       double distance = std::sqrt(deltaX * deltaX + deltaY * deltaY);
 
-                   double distance = std::sqrt(deltaX * deltaX + deltaY * deltaY);
-
-                   //qDebug() << "Distance2 to vertex " << vertices_display[i]->vertex_->getID() << ": " << distance;
+                       //qDebug() << "Distance2 to vertex " << vertices_display[i]->vertex_->getID() << ": " << distance;
 
 
-                   if (distance < minDistance) {
-                       minDistance = distance;
-                       closestVertex = vertices_display[i];
-                       qDebug() << "Selected closest vertex " << vertices_display[i]->vertex_->getID();
+                       if (distance < minDistance) {
+                           minDistance = distance;
+                           closestVertex = vertices_display[i];
+                           qDebug() << "Selected closest vertex " << vertices_display[i]->vertex_->getID();
+                       }
                    }
+
+
                }
 
                if (closestVertex != nullptr) {
@@ -82,12 +85,17 @@ void GraphicsView::mousePressEvent(QMouseEvent *event) {
                    qDebug() << "Selected final closest vertex " << closestVertex->vertex_->getID();
                    startEndVertices.emplace_back(closestVertex);
                    closestVertex->setBrush(MyEllipseItem::startEndBrush);
-
-                   view->addFlagsStartEnd();
+                   if (startEndVertices.size()==1){
+                       view->addFlagsStart();
+                    }
+                   else{
+                   view->addFlagsStart();
+                       view->addFlagsEnd();
+                   }
                }
            }
 
-            QGraphicsView::mousePressEvent(event);
+            //QGraphicsView::mousePressEvent(event);
 
        } else {
            // Pan the view
@@ -95,7 +103,6 @@ void GraphicsView::mousePressEvent(QMouseEvent *event) {
        }
    }
 }
-
 
 
 void View::onRemoveStartEnd(void) {
@@ -125,8 +132,34 @@ void View::onRemoveStartEnd(void) {
 
 }
 
+void View::runFindPath(void){
+    if (startEndVertices.size()==2){
+       qDebug() << "running" << selectedOption;
+       if (selectedOption == "Astar") {
+           std::vector<uint32_t> path =  graph->astar(startEndVertices[0]->vertex_->getID(),startEndVertices[1]->vertex_->getID());
+           for (unsigned int i=0; i<path.size(); i++){
+               qDebug()<< path[i];
+               vertices_display[path[i]]->setBrush(MyEllipseItem::startEndBrush);
+           }
+       } else if (selectedOption == "BFS") {
+           std::vector<uint32_t> path =  graph->bfs(startEndVertices[0]->vertex_->getID(),startEndVertices[1]->vertex_->getID());
+           for (unsigned int i=0; i<path.size(); i++){
+               qDebug()<< path[i];
+               qDebug()<< "size path" << path.size();
+               vertices_display[path[i]]->setBrush(MyEllipseItem::startEndBrush);
+           }
+       } else if (selectedOption == "other"){
+       }
+    }
+
+}
 
 
+
+void View::handleAlgorithmsSelection(int index){
+    selectedOption = combo->itemText(index);;
+    qDebug() << "Selected option: " << selectedOption;
+}
 
 View::View(const QString &name, QWidget *parent)
     : QFrame(parent), scene(QGraphicsScene(this))
@@ -170,6 +203,18 @@ View::View(const QString &name, QWidget *parent)
     dragModeButton->setCheckable(true);
     dragModeButton->setChecked(true);
 
+    resultButton = new QToolButton;
+    resultButton->setText(tr("Find"));
+    resultButton->setCheckable(true);
+    resultButton->setChecked(false);
+
+    combo = new QComboBox(this);
+    combo->setObjectName("comboBox");
+
+
+    combo->setGeometry(20, 20, 200, 30);
+
+    combo->addItems({"Astar", "BFS", "Option 3"});
 
     printButton = new QToolButton;
     printButton->setIcon(QIcon(QPixmap(":/Images/fileprint.png")));
@@ -179,11 +224,14 @@ View::View(const QString &name, QWidget *parent)
     pointerModeGroup->addButton(selectModeButton);
     pointerModeGroup->addButton(dragModeButton);
 
+
     labelLayout->addWidget(label);
     labelLayout->addStretch();
     labelLayout->addWidget(resetButton);
     labelLayout->addWidget(selectModeButton);
     labelLayout->addWidget(dragModeButton);
+    labelLayout->addWidget(combo);
+    labelLayout->addWidget(resultButton);
     labelLayout->addStretch();
     labelLayout->addWidget(printButton);
 
@@ -192,6 +240,7 @@ View::View(const QString &name, QWidget *parent)
     topLayout->addWidget(graphicsView, 1, 0);
     setLayout(topLayout);
 
+    //connect(combo, SIGNAL(currentIndexChanged(int)), this, SLOT(handleAlgorithmsSelection(int)));
     connect(resetButton, &QAbstractButton::clicked, this, &View::resetView);
     connect(zoomSlider, &QAbstractSlider::valueChanged, this, &View::setupMatrix);
     connect(graphicsView->verticalScrollBar(), &QAbstractSlider::valueChanged,
@@ -200,6 +249,7 @@ View::View(const QString &name, QWidget *parent)
             this, &View::setResetButtonEnabled);
     connect(selectModeButton, &QAbstractButton::toggled, this, &View::togglePointerMode);
     connect(dragModeButton, &QAbstractButton::toggled, this, &View::togglePointerMode);
+    connect(resultButton, &QAbstractButton::toggled, this, &View::runFindPath);
     connect(printButton, &QAbstractButton::clicked, this, &View::print);
 
     graphicsView->setDragMode(QGraphicsView::ScrollHandDrag);
@@ -272,67 +322,54 @@ void View::drawMap(){
         scene.addLine(-10, -10, -10, this->size().height()+10, QPen(Qt::gray));
         scene.addLine(-10,this->size().height()+10 , this->size().width()+10, this->size().height()+10, QPen(Qt::gray));
 
-        //scene.addItem(new QGraphicsEllipseItem(20,30,pointSize,pointSize));
-        qDebug() << "Vertices lenght "<< graph->getSize();
-        qDebug() << "x min boundaries "<< mapBoundaries.xMin;
-        qDebug() << "x max boundaries "<< mapBoundaries.xMax;
-        qDebug() << "y min boundaries "<< mapBoundaries.yMin;
-        qDebug() << "y max boundaries "<< mapBoundaries.yMax;
-
 
         if (!graph->getVertices().empty()){
-            for (unsigned int i = 0; i < graph->getSize(); i++){
+           int graphSize = graph->getSize();
+            for (unsigned int i = 0; i < graphSize; i++){
 
-               progressBar.setValue(0.01*i);
-
-               progressBar.setValue(i*50/graph->getSize());
-               dialog.show();
+               progressBar.setValue(i*50/graphSize);
                //QCoreApplication::processEvents();
+               //Vertex currentVertex = graph->getVertex(i);
 
                 //Convert the x and y to fit into the map view
+               if (graph->getVertex(i).initialized){
+                   double x_mapped = (graph->getVertex(i).getX() - mapBoundaries.xMin) / (mapBoundaries.xMax - mapBoundaries.xMin) *this->size().width();
+                   double y_mapped = (graph->getVertex(i).getY() - mapBoundaries.yMin) / (mapBoundaries.yMax - mapBoundaries.yMin) * this->size().height();
 
-               //double x_mapped = (graph->getVertex(i).getX() - mapBoundaries.xMin) / (mapBoundaries.xMax - mapBoundaries.xMin) *this->size().width();
-              // double y_mapped = (graph->getVertex(i).getY() - mapBoundaries.yMin) / (mapBoundaries.yMax - mapBoundaries.yMin) * this->size().height();
+                   graph->getVertex(i).setX(x_mapped);
+                   graph->getVertex(i).setY(y_mapped);
 
-               //graph->getVertex(i).setX(x_mapped);
-               //graph->getVertex(i).setY(y_mapped);
+                   MyEllipseItem* vertex_display = new MyEllipseItem(graph->getVertex(i),
+                                                                     MyEllipseItem::pointSize,
+                                                                     &scene
+                                                                     );
 
+                   // Store the pointer to the QGraphicsEllipseItem in your 'vertices_display' container
+                   vertices_display.emplace_back(vertex_display);
 
-                MyEllipseItem* vertex_display = new MyEllipseItem(graph->getVertex(i),
-                                                                  MyEllipseItem::pointSize,
-                                                                  &scene
-                    );
+                   scene.addItem(vertex_display);
+               }
+               else{
+                   vertices_display.emplace_back(nullptr);
+               }
 
-                // Store the pointer to the QGraphicsEllipseItem in your 'vertices_display' container
-                vertices_display.emplace_back(vertex_display);
-
-                scene.addItem(vertex_display);
             }
-            for (unsigned int i = 0; i < graph->getSize(); i++){
                 //progressBar.setValue(i*50/graph->vertices.size());
                 //QCoreApplication::processEvents();
 
-                for (unsigned int j = 0; j < graph->edges.size(); j++){
-                   if (graph->getVertex(i).getID()== graph->edges[j].source_vid){
-                        qDebug() << graph->edges[j].dest_vid;
+
+            for (unsigned int j = 0; j < graph->edges.size(); j++){
 
 
+                graph->getVertex(graph->edges[j].source_vid).addNeighbour(graph->edges[j].dest_vid);
 
-                        Vertex* vertex = this->getVertexByID(graph->edges[j].dest_vid);
 
+                QPen linePen;
+                linePen.setColor(Qt::black);
+                linePen.setWidthF(0.1);
 
-                        graph->getVertex(i).addNeighbour(vertex->getID());
+                scene.addLine(graph->getVertex(graph->edges[j].source_vid).getX(), graph->getVertex(graph->edges[j].source_vid).getY(), graph->getVertex(graph->edges[j].dest_vid).getX(),graph->getVertex(graph->edges[j].dest_vid).getY(), linePen);
 
-                        QPen linePen;
-                        linePen.setColor(Qt::black);
-                        linePen.setWidthF(0.1);
-
-                        scene.addLine(graph->getVertex(i).getX(), graph->getVertex(i).getY(), vertex->getX(), vertex->getY(), linePen);
-
-                        continue;
-
-                    }
-                }
             }
 
         }
@@ -347,7 +384,7 @@ void View::drawMap(){
 Vertex* View::getVertexByID(const double& ID) {
     return &graph->getVertex(ID);
     for (unsigned int k = 0; k < graph->getSize(); k++){
-    if (graph->getVertex(k).getID() == ID){ //k
+    if (graph->getVertex(k).getID() == ID){
             return &graph->getVertex(k);
         }
     }
@@ -362,12 +399,16 @@ void View::onLoadMapAction(){
 
     drawMap();
 
-
     resetView();
 }
 
 
 void View::loadMap() {
+
+
+
+    QString initialPath = QDir::currentPath();
+    QString filePath = QFileDialog::getOpenFileName(this, "Open Text File", initialPath, "Text Files (*.txt)");
 
     QDialog dialog;
     QProgressBar progressBar(&dialog);
@@ -386,10 +427,10 @@ void View::loadMap() {
     dialog.setModal(true);
     dialog.show();
 
-    QString initialPath = QDir::currentPath();
-    QString filePath = QFileDialog::getOpenFileName(this, "Open Text File", initialPath, "Text Files (*.txt)");
-
     if (!filePath.isEmpty()) {
+
+
+
         QFile file(filePath);
         if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
             QTextStream in(&file);
@@ -403,19 +444,18 @@ void View::loadMap() {
 
             while (!in.atEnd()) {
 
-                progressBar.setValue(0.006*linesRead);
+                //progressBar.setValue(0.006*linesRead);
 
                 QString line = in.readLine();
                 //# V,vertexid,longitude,latitude,x*,y* Vertex line readed format
-                if (line.startsWith("V")) {
+                if (line.startsWith("V,")) {
                     QStringList parts = line.split(",");
                     if (parts.size() >= 5) {
                         double longitude = parts.at(2).toDouble();
                         double latitude = parts.at(3).toDouble();
-                        double ID = parts.at(1).toDouble();
+                        uint32_t ID = parts.at(1).toInt();
 
-                        Vertex vertex = Vertex(longitude, latitude, ID);
-
+                        Vertex vertex = Vertex(ID,longitude, latitude);
 
                         minX = qMin(minX, vertex.getX());
                         maxX = qMax(maxX, vertex.getX());
@@ -423,9 +463,6 @@ void View::loadMap() {
                         maxY = qMax(maxY, vertex.getY());
 
                         graph->addVertexToGraph(vertex);
-
-
-
                         ++linesRead;
                     }
                 }
@@ -460,7 +497,7 @@ void View::loadMap() {
     }
 
     mapLoaded = true;
-    dialog.accept();
+    //dialog.accept();
 }
 
 
@@ -472,8 +509,23 @@ void View::onAddRandomStartEnd(void)
         std::random_device rd;
         std::mt19937 gen(rd());
         std::uniform_int_distribution<int> distribution(0, graph->getSize());
+
         int first_index = distribution(gen);
         int second_index = distribution(gen);
+
+        while (!graph->getVertex(first_index).initialized){
+
+            first_index = distribution(gen);
+
+        }
+
+        while (!graph->getVertex(second_index).initialized){
+
+            second_index = distribution(gen);
+        }
+
+
+
         startEndVertices.emplace_back(vertices_display[first_index]);
         startEndVertices.emplace_back(vertices_display[second_index]);
 
@@ -483,51 +535,43 @@ void View::onAddRandomStartEnd(void)
         vertices_display[first_index]->setBrush(MyEllipseItem::startEndBrush);
         vertices_display[second_index]->setBrush(MyEllipseItem::startEndBrush);
 
-
-        qDebug() << vertices_display[first_index]->vertex_->getID();
-        qDebug() << vertices_display[second_index]->vertex_->getID();
-        addFlagsStartEnd();
+        addFlagsStart();
+        addFlagsEnd();
     }
 
 
 }
 
-void View::addFlagsStartEnd(void){
+void View::addFlagsStart(void){
+    double size = 20;
 
-    if (startEndVertices.size()>=1){
+    QPolygonF triangle;
+    triangle << QPointF(startEndVertices[0]->vertex_->getX() -size/2, startEndVertices[0]->vertex_->getY() - size ) << QPointF(startEndVertices[0]->vertex_->getX() + size/2 , startEndVertices[0]->vertex_->getY() - size) << QPointF(startEndVertices[0]->vertex_->getX(), startEndVertices[0]->vertex_->getY());
+    triangleItemStart = scene.addPolygon(triangle, QPen(Qt::NoPen), QBrush(Qt::blue));
 
-        double size = 20;
+    QRectF circleRect(startEndVertices[0]->vertex_->getX() -size/2,startEndVertices[0]->vertex_->getY() -3*size/2 , size, size);
 
-        // Create a filled triangle
-        QPolygonF triangle;
-        triangle << QPointF(startEndVertices[0]->vertex_->getX() -size/2, startEndVertices[0]->vertex_->getY() - size ) << QPointF(startEndVertices[0]->vertex_->getX() + size/2 , startEndVertices[0]->vertex_->getY() - size) << QPointF(startEndVertices[0]->vertex_->getX(), startEndVertices[0]->vertex_->getY());
-        triangleItemStart = scene.addPolygon(triangle, QPen(Qt::NoPen), QBrush(Qt::blue));
+    circleItemStart = scene.addEllipse(circleRect, QPen(Qt::NoPen), QBrush(Qt::blue));
+    QRectF circleRect1(startEndVertices[0]->vertex_->getX() -size/4,startEndVertices[0]->vertex_->getY() -3*size/2 +size/4, size/2, size/2);
+    circleItem1Start = scene.addEllipse(circleRect1, QPen(Qt::NoPen), QBrush(Qt::white));
 
-        // Create a filled circle
-        QRectF circleRect(startEndVertices[0]->vertex_->getX() -size/2,startEndVertices[0]->vertex_->getY() -3*size/2 , size, size);
-        circleItemStart = scene.addEllipse(circleRect, QPen(Qt::NoPen), QBrush(Qt::blue));
-
-        QRectF circleRect1(startEndVertices[0]->vertex_->getX() -size/4,startEndVertices[0]->vertex_->getY() -3*size/2 +size/4, size/2, size/2);
-        circleItem1Start = scene.addEllipse(circleRect1, QPen(Qt::NoPen), QBrush(Qt::white));
-
-        if (startEndVertices.size()>=2){
-            // Create a filled triangle
-            QPolygonF triangle;
-            triangle << QPointF(startEndVertices[1]->vertex_->getX() -size/2, startEndVertices[1]->vertex_->getY() - size ) << QPointF(startEndVertices[1]->vertex_->getX() + size/2 , startEndVertices[1]->vertex_->getY() - size) << QPointF(startEndVertices[1]->vertex_->getX(), startEndVertices[1]->vertex_->getY());
-            triangleItemEnd = scene.addPolygon(triangle, QPen(Qt::NoPen), QBrush(Qt::red));
-
-            // Create a filled circle
-            QRectF circleRect(startEndVertices[1]->vertex_->getX() -size/2,startEndVertices[1]->vertex_->getY() -3*size/2 , size, size);
-            circleItemEnd = scene.addEllipse(circleRect, QPen(Qt::NoPen), QBrush(Qt::red));
-
-            QRectF circleRect1(startEndVertices[1]->vertex_->getX() -size/4,startEndVertices[1]->vertex_->getY() -3*size/2 +size/4, size/2, size/2);
-            circleItem1End = scene.addEllipse(circleRect1, QPen(Qt::NoPen), QBrush(Qt::white));
-
-        }
-
-    }
 
 }
+
+void View::addFlagsEnd(void){
+    double size = 20;
+
+    QPolygonF triangle2;
+    triangle2 << QPointF(startEndVertices[1]->vertex_->getX() -size/2, startEndVertices[1]->vertex_->getY() - size ) << QPointF(startEndVertices[1]->vertex_->getX() + size/2 , startEndVertices[1]->vertex_->getY() - size) << QPointF(startEndVertices[1]->vertex_->getX(), startEndVertices[1]->vertex_->getY());
+    triangleItemEnd = scene.addPolygon(triangle2, QPen(Qt::NoPen), QBrush(Qt::red));
+
+    QRectF circleRectE(startEndVertices[1]->vertex_->getX() -size/2,startEndVertices[1]->vertex_->getY() -3*size/2 , size, size);
+    circleItemEnd = scene.addEllipse(circleRectE, QPen(Qt::NoPen), QBrush(Qt::red));
+
+    QRectF circleRect1E(startEndVertices[1]->vertex_->getX() -size/4,startEndVertices[1]->vertex_->getY() -3*size/2 +size/4, size/2, size/2);
+    circleItem1End = scene.addEllipse(circleRect1E, QPen(Qt::NoPen), QBrush(Qt::white));
+}
+
 
 void View::setResetButtonEnabled()
 {

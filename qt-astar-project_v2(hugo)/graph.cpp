@@ -2,7 +2,8 @@
 
 Graph::Graph(int size)
 {
-    vertices_.reserve(size);
+    size_ = size;
+    vertices_.resize(size);
     weights_.reserve(size);
     estimates_.resize(size, NAN);
 }
@@ -10,6 +11,7 @@ Graph::Graph(int size)
 void Graph::addVertexToGraph(const Vertex &vertex)
 {
     vertices_[vertex.getID()] = vertex;
+
 }
 
 void Graph::addEdgeToGraph(const uint32_t vertex1_id, const uint32_t vertex2_id, double distance)
