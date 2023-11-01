@@ -18,7 +18,7 @@ public:
     std::vector<Edge> edges;
 
     void addEdgeToGraph(const uint32_t vertex1, const uint32_t vertex2, double distance);
-    double distanceBetweenVertices(uint32_t vertex1, uint32_t vertex2) const;
+    double distanceBetweenVertices(uint32_t vertex1, uint32_t vertex2);
     std::vector<uint32_t> getAdjacentVectors(uint32_t vertex_id) const {return vertices_[vertex_id].getNeighbours();};
     Vertex& getVertex(uint32_t v_id) {return vertices_[v_id];};
     const Vertex& getVertex(uint32_t v_id) const {return vertices_[v_id];};

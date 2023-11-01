@@ -18,6 +18,7 @@ struct Edge
 class Vertex
 {
 public:
+    int idCounter = 0;
     Vertex(int id = 0, double latitude = 0, double longitude = 0)
         : ID_(id == 0 ? idCounter++ : id), // Initialize the const member variable here
           x(earthRadius * longitude * M_PI / 180.0),
@@ -54,13 +55,12 @@ public:
     void addNeighbour(uint32_t neighbourID) { neighbours.push_back(neighbourID); }
 
 private:
-    static int idCounter;
+
     double x;
     double y;
     const int ID_;
     std::vector<uint32_t> neighbours;
 };
+//int Vertex::idCounter = 0;
 
 #endif // VERTEX_H
-
-int Vertex::idCounter = 0;

@@ -321,13 +321,13 @@ void View::drawMap(){
                         Vertex* vertex = this->getVertexByID(graph->edges[j].dest_vid);
 
 
-                        graph->vertices[i].add2connectedVertices(vertex);
+                        graph->getVertex(i).addNeighbour(vertex->getID());
 
                         QPen linePen;
                         linePen.setColor(Qt::black);
                         linePen.setWidthF(0.1);
 
-                        scene.addLine(graph->vertices[i].getX(), graph->vertices[i].getY(), vertex->getX(), vertex->getY(), linePen);
+                        scene.addLine(graph->getVertex(i).getX(), graph->getVertex(i).getY(), vertex->getX(), vertex->getY(), linePen);
 
                         continue;
 
@@ -345,10 +345,10 @@ void View::drawMap(){
 }
 
 Vertex* View::getVertexByID(const double& ID) {
-
-    for (unsigned int k = 0; k < graph->vertices.size(); k++){
-        if (graph->vertices[k].getID() == ID){
-            return &graph->vertices[k];
+    return &graph->getVertex(ID);
+    for (unsigned int k = 0; k < graph->getSize(); k++){
+    if (graph->getVertex(k).getID() == ID){ //k
+            return &graph->getVertex(k);
         }
     }
     return nullptr;
@@ -356,7 +356,7 @@ Vertex* View::getVertexByID(const double& ID) {
 
 void View::onLoadMapAction(){
 
-    graph = new Graph();
+    graph = new Graph(300000);
     loadMap();
     setupMatrix();
 
@@ -422,7 +422,7 @@ void View::loadMap() {
                         minY = qMin(minY, vertex.getY());
                         maxY = qMax(maxY, vertex.getY());
 
-                        graph->vertices.emplace_back(vertex);
+                        graph->addVertexToGraph(vertex);
 
 
 
@@ -471,7 +471,7 @@ void View::onAddRandomStartEnd(void)
 
         std::random_device rd;
         std::mt19937 gen(rd());
-        std::uniform_int_distribution<int> distribution(0, graph->vertices.size());
+        std::uniform_int_distribution<int> distribution(0, graph->getSize());
         int first_index = distribution(gen);
         int second_index = distribution(gen);
         startEndVertices.emplace_back(vertices_display[first_index]);
