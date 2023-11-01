@@ -1,53 +1,46 @@
 #ifndef VERTEX_H
 #define VERTEX_H
 
-#include <QWidget>
-#include <QPainter>
+#include <utility>
 #include <cmath>
-#include <QPolygon>
-#include <QGraphicsEllipseItem>
-
-#define earthRadius 6378000.137
-
-struct Edge
-{
-    Edge() {}
-    Edge(double source_vid, double dest_vid): source_vid{source_vid}, dest_vid{dest_vid}  {}
-    double source_vid;
-    double dest_vid;
-};
-
-class Vertex : public QWidget
+#include <vector>
+#define earthRadius 6371000
+#define M_PI 3.14159265358979323846
+class Vertex
 {
 public:
-    // Default constructor
-    Vertex(QWidget *parent = nullptr) : QWidget(parent), x(0), y(0), ID_{0} {}
+    Vertex(int id = 0, double latitude = 0, double longitude = 0)
+        : ID(id == 0 ? idCounter++ : id), // Initialize the const member variable here
+          x(earthRadius * longitude * M_PI / 180.0),
+          y(earthRadius * log(tan(M_PI / 4 + latitude * M_PI / 360.0)))
+    { }
 
-    // Parameterized constructor
-    Vertex(double xCoord, double yCoord, double ID, QWidget *parent = nullptr);
-
-    Vertex(const Vertex& vertex);
-
-    void Geo2pixel(double longitude, double latitude, double& x, double& y);
+    Vertex &Vertex::operator=(const Vertex &other)
+    {
+        if (this != &other)
+        {
+            this->x = other.x;
+            this->y = other.y;
+            this->neighbours = other.neighbours;
+        }
+        return *this;
+    }
 
     // Getters for x and y
-    double getX() const;
-    double getY() const;
-    double getID() const;
+    std::pair<double, double> getXY() const;
+    int getID() const;
 
-    // Setters for x and y
-    void setX(double newX);
-    void setY(double newY);
-
-    //Adder
-    void add2connectedVertices(Vertex* vertex);
-
-    std::vector<Vertex*> connectedVertices;
+    std::vector<u_int32_t> getNeighbours() const { return neighbours; }
+    void addNeighbour(int neighbourID) { neighbours.push_back(neighbourID); }
 
 private:
+    static int idCounter;
     double x;
     double y;
-    double ID_;
+    const int ID;
+    std::vector<u_int32_t> neighbours;
 };
 
 #endif // VERTEX_H
+
+int Vertex::idCounter = 0;
