@@ -41,8 +41,14 @@ void MainWindow::addSideBar(){
     // Connect the button click signal to a slot
     connect(randomStartEndButton, &QPushButton::clicked, this->graphview, &View::onAddRandomStartEnd);
 
+    QPushButton *clearStartEndButton = new QPushButton("Clear Start/End");
+    // Connect the button click signal to a slot
+    connect(clearStartEndButton, &QPushButton::clicked, this->graphview, &View::onRemoveStartEnd);
+
+
 
     sideLayout->addWidget(randomStartEndButton);
+    sideLayout->addWidget(clearStartEndButton);
     sideWidget->setLayout(sideLayout);
 
     int sideWidgetWidth = width() / 4;

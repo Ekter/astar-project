@@ -2,8 +2,6 @@
 
 Graph:: Graph()
 {
-    //vertices.push_back(Vertex(70,30,1234));
-
 
 }
 

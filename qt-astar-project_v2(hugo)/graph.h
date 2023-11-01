@@ -15,14 +15,15 @@
 #include <QPushButton>
 #include <QGraphicsProxyWidget>
 
-#include "Vertex.h"
+#include "vertex.h"
 
-class Graph : public QGraphicsScene
+class Graph
 {
 public:
     Graph();
     void addVertexToGraph(const Vertex& vertex);
     std::vector<Vertex> vertices;
+    std::vector<Edge> edges;
 
 public slots:
 
@@ -30,7 +31,7 @@ public slots:
 private:
 
     Vertex vertex_test;
-    //std::vector<Edge> edges;
+
 };
 
 #endif // GRAPH_H

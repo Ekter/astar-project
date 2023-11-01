@@ -3,33 +3,130 @@
 
 #include "view.h"
 
-#if defined(QT_PRINTSUPPORT_LIB)
-#include <QtPrintSupport/qtprintsupportglobal.h>
-#if QT_CONFIG(printdialog)
-#include <QPrinter>
-#include <QPrintDialog>
-#endif
-#endif
-#include <QtWidgets>
-#include <QtMath>
-#include <QGraphicsTextItem>
-
 #if QT_CONFIG(wheelevent)
+
+
+bool MyEllipseItem::SelectModeState = false;
+QBrush MyEllipseItem::defaultBrush;
+QBrush MyEllipseItem::hoverBrush;
+QBrush MyEllipseItem::startEndBrush;
+QPen MyEllipseItem::pen;
+qreal MyEllipseItem::pointSize;
 
 //Enable with Ctrl+Scrool to ZoomIn & ZoomOut
 void GraphicsView::wheelEvent(QWheelEvent *e)
 {
-    if (e->modifiers() & Qt::ControlModifier) {
-        if (e->angleDelta().y() > 0)
-            view->zoomInBy(6);
-        else
-            view->zoomOutBy(6);
-        e->accept();
-    } else {
-        QGraphicsView::wheelEvent(e);
-    }
+   if (e->modifiers() & Qt::ControlModifier) {
+       if (e->angleDelta().y() > 0)
+           view->zoomInBy(6);
+       else
+           view->zoomOutBy(6);
+       e->accept();
+   } else {
+       QGraphicsView::wheelEvent(e);
+   }
 }
 #endif
+
+std::vector<MyEllipseItem*> startEndVertices;
+std::vector<MyEllipseItem*> vertices_display;
+QGraphicsPixmapItem* iconItemStart;
+QGraphicsPixmapItem* iconItemEnd;
+
+void MyEllipseItem::hoverEnterEvent(QGraphicsSceneHoverEvent* event){
+   if (this->SelectModeState){
+       setBrush(this->hoverBrush);
+   }
+}
+
+void MyEllipseItem::hoverLeaveEvent(QGraphicsSceneHoverEvent* event) {
+   setBrush(this->defaultBrush);
+}
+
+void GraphicsView::mousePressEvent(QMouseEvent *event) {
+   if (event->button() == Qt::LeftButton) {
+       if (MyEllipseItem::SelectModeState) {
+           QPointF scenePos = mapToScene(event->pos());  // Convert the mouse click position to scene coordinates
+           qDebug() << "Mouse clicked at scene position: " << scenePos;
+           qDebug() << "Size of the startEndVertices array: " << startEndVertices.size();
+
+           if (startEndVertices.size() < 2) {
+               // Find the closest vertex within a certain distance
+               qreal minDistance = std::numeric_limits<qreal>::max();
+               MyEllipseItem* closestVertex = nullptr;
+
+               qDebug() << "mindistance" << minDistance ;
+
+               for (unsigned int i=0; i< vertices_display.size(); i++){
+
+                   double x = static_cast<double>(scenePos.x());
+                   double y = static_cast<double>(scenePos.y());
+
+                   double deltaX = x - vertices_display[i]->vertex_->getX() ;
+                   double deltaY = y - vertices_display[i]->vertex_->getY();
+
+                   double distance = std::sqrt(deltaX * deltaX + deltaY * deltaY);
+
+                   //qDebug() << "Distance2 to vertex " << vertices_display[i]->vertex_->getID() << ": " << distance;
+
+
+                   if (distance < minDistance) {
+                       minDistance = distance;
+                       closestVertex = vertices_display[i];
+                       qDebug() << "Selected closest vertex " << vertices_display[i]->vertex_->getID();
+                   }
+               }
+
+               if (closestVertex != nullptr) {
+                   // Select the closest vertex
+                   qDebug() << "Selected final closest vertex " << closestVertex->vertex_->getID();
+                   startEndVertices.emplace_back(closestVertex);
+                   closestVertex->setBrush(MyEllipseItem::startEndBrush);
+
+                   view->addFlagsStartEnd();
+               }
+           }
+
+            QGraphicsView::mousePressEvent(event);
+
+       } else {
+           // Pan the view
+           QGraphicsView::mousePressEvent(event);
+       }
+   }
+}
+
+
+
+void View::onRemoveStartEnd(void) {
+   if (mapLoaded){
+
+       for (unsigned int i=0; i< startEndVertices.size(); i++){
+           qDebug() << startEndVertices[i]->vertex_->getID();
+
+           startEndVertices[i]->setBrush(Qt::blue);
+           startEndVertices[i]->update();
+
+       }
+       if (startEndVertices.size()>=1){
+           scene.removeItem(triangleItemStart);
+           scene.removeItem(circleItemStart);
+           scene.removeItem(circleItem1Start);
+       }
+       if (startEndVertices.size()>=2){
+           scene.removeItem(triangleItemEnd);
+           scene.removeItem(circleItemEnd);
+           scene.removeItem(circleItem1End);
+       }
+
+       startEndVertices.clear();
+       scene.update();
+    }
+
+}
+
+
+
 
 View::View(const QString &name, QWidget *parent)
     : QFrame(parent), scene(QGraphicsScene(this))
@@ -42,6 +139,7 @@ View::View(const QString &name, QWidget *parent)
     graphicsView->setOptimizationFlags(QGraphicsView::DontSavePainterState);
     graphicsView->setViewportUpdateMode(QGraphicsView::SmartViewportUpdate);
     graphicsView->setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
+
 
     graphicsView->setScene(&scene);
 
@@ -72,27 +170,20 @@ View::View(const QString &name, QWidget *parent)
     dragModeButton->setCheckable(true);
     dragModeButton->setChecked(true);
 
-    addGridButton = new QToolButton;
-    addGridButton->setText(tr("Grid Activated"));
-    addGridButton->setCheckable(true);
-    addGridButton->setChecked(false);
-
 
     printButton = new QToolButton;
-    printButton->setIcon(QIcon(QPixmap(":/fileprint.png")));
+    printButton->setIcon(QIcon(QPixmap(":/Images/fileprint.png")));
 
     QButtonGroup *pointerModeGroup = new QButtonGroup(this);
     pointerModeGroup->setExclusive(true);
     pointerModeGroup->addButton(selectModeButton);
     pointerModeGroup->addButton(dragModeButton);
-    pointerModeGroup->addButton(addGridButton);
 
     labelLayout->addWidget(label);
     labelLayout->addStretch();
     labelLayout->addWidget(resetButton);
     labelLayout->addWidget(selectModeButton);
     labelLayout->addWidget(dragModeButton);
-    labelLayout->addWidget(addGridButton);
     labelLayout->addStretch();
     labelLayout->addWidget(printButton);
 
@@ -109,7 +200,6 @@ View::View(const QString &name, QWidget *parent)
             this, &View::setResetButtonEnabled);
     connect(selectModeButton, &QAbstractButton::toggled, this, &View::togglePointerMode);
     connect(dragModeButton, &QAbstractButton::toggled, this, &View::togglePointerMode);
-     connect(addGridButton, &QAbstractButton::toggled, this, &View::onAddGridView);
     connect(printButton, &QAbstractButton::clicked, this, &View::print);
 
     graphicsView->setDragMode(QGraphicsView::ScrollHandDrag);
@@ -125,37 +215,17 @@ QGraphicsView *View::view() const
 
 void View::resetView()
 {
-    zoomSlider->setValue(250);
+    zoomSlider->setValue(230);
     setupMatrix();
     graphicsView->ensureVisible(QRectF(0, 0, 0, 0));
 
     resetButton->setEnabled(false);
 }
 
-void View::onAddGridView()
-{
-    // Set background color to white
-    graphicsView->setBackgroundBrush(Qt::white);
-
-    graphicsView->setRenderHint(QPainter::Antialiasing);
-    graphicsView->setRenderHint(QPainter::SmoothPixmapTransform);
-    graphicsView->setViewportUpdateMode(QGraphicsView::FullViewportUpdate);
-
-    for (int x = 0; x <= this->size().width(); x += 5)
-    {
-        scene.addLine(x, 0, x, this->size().height(), QPen(Qt::gray));
-    }
-
-    for (int y = 0; y <= this->size().height(); y += 5)
-    {
-        scene.addLine(0, y, this->size().width(), y, QPen(Qt::gray));
-    }
-}
-
 void View::drawMap(){
 
     if(graph == nullptr){
-        //Create a gray backgruond by default
+        //Create a gray background by default
         scene.setBackgroundBrush(Qt::gray);
 
         //Disable the button in the graphview interface
@@ -169,29 +239,153 @@ void View::drawMap(){
     }
 
     else{
+
+        QDialog dialog;
+        QProgressBar progressBar(&dialog);
+        QLabel label("Drawing Map. Please wait...", &dialog);
+
+        progressBar.setRange(0, 100);
+        progressBar.setValue(0);
+
+        QVBoxLayout layout(&dialog);
+        layout.addWidget(&label);
+        layout.addWidget(&progressBar);
+
+
+        dialog.setWindowTitle("Loading...Please Wait");
+        dialog.setFixedSize(300, 100);
+        dialog.setModal(true);
+        dialog.show();
+
         //Draw the map
         scene.clear();
         this->setDisabled(false);
         scene.setBackgroundBrush(Qt::white);
+
+        scene.addLine(0, 0, this->size().width(),0, QPen(Qt::gray));
+        scene.addLine(this->size().width(), 0, this->size().width(), this->size().height(), QPen(Qt::gray));
+        scene.addLine(0, 0, 0, this->size().height(), QPen(Qt::gray));
+        scene.addLine(0,this->size().height() , this->size().width(), this->size().height(), QPen(Qt::gray));
+
+        scene.addLine(-10, -10, this->size().width()+10,-10, QPen(Qt::gray));
+        scene.addLine(this->size().width()+10, -10, this->size().width()+10, this->size().height()+10, QPen(Qt::gray));
+        scene.addLine(-10, -10, -10, this->size().height()+10, QPen(Qt::gray));
+        scene.addLine(-10,this->size().height()+10 , this->size().width()+10, this->size().height()+10, QPen(Qt::gray));
+
+        //scene.addItem(new QGraphicsEllipseItem(20,30,pointSize,pointSize));
+        qDebug() << "Vertices lenght "<< graph->vertices.size();
+        qDebug() << "x min boundaries "<< mapBoundaries.xMin;
+        qDebug() << "x max boundaries "<< mapBoundaries.xMax;
+        qDebug() << "y min boundaries "<< mapBoundaries.yMin;
+        qDebug() << "y max boundaries "<< mapBoundaries.yMax;
+
+
         if (!graph->vertices.empty()){
             for (unsigned int i = 0; i < graph->vertices.size(); i++){
-                sc
+
+               progressBar.setValue(0.01*i);
+
+               progressBar.setValue(i*50/graph->vertices.size());
+               dialog.show();
+               //QCoreApplication::processEvents();
+
+                //Convert the x and y to fit into the map view
+
+                double x_mapped = (graph->vertices[i].getX() - mapBoundaries.xMin) / (mapBoundaries.xMax - mapBoundaries.xMin) *this->size().width();
+                double y_mapped = (graph->vertices[i].getY() - mapBoundaries.yMin) / (mapBoundaries.yMax - mapBoundaries.yMin) * this->size().height();
+
+                graph->vertices[i].setX(x_mapped);
+                graph->vertices[i].setY(y_mapped);
+
+
+                MyEllipseItem* vertex_display = new MyEllipseItem(graph->vertices[i],
+                                                                  MyEllipseItem::pointSize,
+                                                                  &scene
+                    );
+
+                // Store the pointer to the QGraphicsEllipseItem in your 'vertices_display' container
+                vertices_display.emplace_back(vertex_display);
+
+                scene.addItem(vertex_display);
             }
+            for (unsigned int i = 0; i < graph->vertices.size(); i++){
+                //progressBar.setValue(i*50/graph->vertices.size());
+                //QCoreApplication::processEvents();
+
+                for (unsigned int j = 0; j < graph->edges.size(); j++){
+                    if (graph->vertices[i].getID()== graph->edges[j].source_vid){
+                        qDebug() << graph->edges[j].dest_vid;
+
+
+
+                        Vertex* vertex = this->getVertexByID(graph->edges[j].dest_vid);
+
+
+                        graph->vertices[i].add2connectedVertices(vertex);
+
+                        QPen linePen;
+                        linePen.setColor(Qt::black);
+                        linePen.setWidthF(0.1);
+
+                        scene.addLine(graph->vertices[i].getX(), graph->vertices[i].getY(), vertex->getX(), vertex->getY(), linePen);
+
+                        continue;
+
+                    }
+                }
+            }
+
         }
 
-
-
+    dialog.accept();
     }
+
+
+
+}
+
+Vertex* View::getVertexByID(const double& ID) {
+
+    for (unsigned int k = 0; k < graph->vertices.size(); k++){
+        if (graph->vertices[k].getID() == ID){
+            return &graph->vertices[k];
+        }
+    }
+    return nullptr;
 }
 
 void View::onLoadMapAction(){
+
     graph = new Graph();
     loadMap();
+    setupMatrix();
+
     drawMap();
+
+
+    resetView();
 }
 
 
 void View::loadMap() {
+
+    QDialog dialog;
+    QProgressBar progressBar(&dialog);
+    QLabel label("Reading the File. Please wait...", &dialog);
+
+    progressBar.setRange(0, 100);
+    progressBar.setValue(0);
+
+    QVBoxLayout layout(&dialog);
+    layout.addWidget(&label);
+    layout.addWidget(&progressBar);
+
+
+    dialog.setWindowTitle("Loading...Please Wait");
+    dialog.setFixedSize(300, 100);
+    dialog.setModal(true);
+    dialog.show();
+
     QString initialPath = QDir::currentPath();
     QString filePath = QFileDialog::getOpenFileName(this, "Open Text File", initialPath, "Text Files (*.txt)");
 
@@ -208,6 +402,9 @@ void View::loadMap() {
             int linesRead = 0;
 
             while (!in.atEnd()) {
+
+                progressBar.setValue(0.006*linesRead);
+
                 QString line = in.readLine();
                 //# V,vertexid,longitude,latitude,x*,y* Vertex line readed format
                 if (line.startsWith("V")) {
@@ -217,7 +414,8 @@ void View::loadMap() {
                         double latitude = parts.at(3).toDouble();
                         double ID = parts.at(1).toDouble();
 
-                        Vertex vertex(longitude, latitude, ID, new QGraphicsEllipseItem());
+                        Vertex vertex = Vertex(longitude, latitude, ID);
+
 
                         minX = qMin(minX, vertex.getX());
                         maxX = qMax(maxX, vertex.getX());
@@ -226,6 +424,8 @@ void View::loadMap() {
 
                         graph->vertices.emplace_back(vertex);
 
+
+
                         ++linesRead;
                     }
                 }
@@ -233,9 +433,13 @@ void View::loadMap() {
                 else if (line.startsWith("E,")){
                     QStringList parts = line.split(",");
                     if (parts.size() >= 5) {
-                        double source_id = parts.at(2).toDouble();
-                        double dest_id = parts.at(3).toDouble();
+                        double source_id = parts.at(1).toDouble();
+                        double dest_id = parts.at(2).toDouble();
                         double length = parts.at(4).toDouble();
+
+                        Edge edge= Edge(source_id,dest_id);
+
+                        graph->edges.emplace_back(edge);
 
                     }
                 }
@@ -243,28 +447,86 @@ void View::loadMap() {
 
             file.close();
 
+            //According to the set of coordinate it get the boundaries of my point to draw the map
+            mapBoundaries.xMin = minX;
+            mapBoundaries.xMax = maxX;
+            mapBoundaries.yMin = minY;
+            mapBoundaries.yMax = maxY;
+
+
         } else {
             QMessageBox::critical(this, "Error", "Failed to open the selected file.");
         }
     }
+
+    mapLoaded = true;
+    dialog.accept();
 }
+
+
 
 void View::onAddRandomStartEnd(void)
 {
+    if (mapLoaded){
 
-    QPixmap startIcon(":/Images/location_end.png");
-    QPixmap endIcon(":/Images/location_end.png");
+        std::random_device rd;
+        std::mt19937 gen(rd());
+        std::uniform_int_distribution<int> distribution(0, graph->vertices.size());
+        int first_index = distribution(gen);
+        int second_index = distribution(gen);
+        startEndVertices.emplace_back(vertices_display[first_index]);
+        startEndVertices.emplace_back(vertices_display[second_index]);
 
-    startIcon = startIcon.scaled(QSize(32, 32), Qt::KeepAspectRatio);
-    endIcon = endIcon.scaled(QSize(32, 32), Qt::KeepAspectRatio);
-    QGraphicsPixmapItem* startItem = new QGraphicsPixmapItem(startIcon);
-    QGraphicsPixmapItem* endItem = new QGraphicsPixmapItem(endIcon);
-    startItem->setPos(1000, 10);
-    endItem->setPos(200, 20);
+        startEndVertices[0]->setBrush(MyEllipseItem::startEndBrush);
+        startEndVertices[1]->setBrush(MyEllipseItem::startEndBrush);
+
+        vertices_display[first_index]->setBrush(MyEllipseItem::startEndBrush);
+        vertices_display[second_index]->setBrush(MyEllipseItem::startEndBrush);
 
 
-    scene.addItem(startItem);
-    scene.addItem(endItem);
+        qDebug() << vertices_display[first_index]->vertex_->getID();
+        qDebug() << vertices_display[second_index]->vertex_->getID();
+        addFlagsStartEnd();
+    }
+
+
+}
+
+void View::addFlagsStartEnd(void){
+
+    if (startEndVertices.size()>=1){
+
+        double size = 20;
+
+        // Create a filled triangle
+        QPolygonF triangle;
+        triangle << QPointF(startEndVertices[0]->vertex_->getX() -size/2, startEndVertices[0]->vertex_->getY() - size ) << QPointF(startEndVertices[0]->vertex_->getX() + size/2 , startEndVertices[0]->vertex_->getY() - size) << QPointF(startEndVertices[0]->vertex_->getX(), startEndVertices[0]->vertex_->getY());
+        triangleItemStart = scene.addPolygon(triangle, QPen(Qt::NoPen), QBrush(Qt::blue));
+
+        // Create a filled circle
+        QRectF circleRect(startEndVertices[0]->vertex_->getX() -size/2,startEndVertices[0]->vertex_->getY() -3*size/2 , size, size);
+        circleItemStart = scene.addEllipse(circleRect, QPen(Qt::NoPen), QBrush(Qt::blue));
+
+        QRectF circleRect1(startEndVertices[0]->vertex_->getX() -size/4,startEndVertices[0]->vertex_->getY() -3*size/2 +size/4, size/2, size/2);
+        circleItem1Start = scene.addEllipse(circleRect1, QPen(Qt::NoPen), QBrush(Qt::white));
+
+        if (startEndVertices.size()>=2){
+            // Create a filled triangle
+            QPolygonF triangle;
+            triangle << QPointF(startEndVertices[1]->vertex_->getX() -size/2, startEndVertices[1]->vertex_->getY() - size ) << QPointF(startEndVertices[1]->vertex_->getX() + size/2 , startEndVertices[1]->vertex_->getY() - size) << QPointF(startEndVertices[1]->vertex_->getX(), startEndVertices[1]->vertex_->getY());
+            triangleItemEnd = scene.addPolygon(triangle, QPen(Qt::NoPen), QBrush(Qt::red));
+
+            // Create a filled circle
+            QRectF circleRect(startEndVertices[1]->vertex_->getX() -size/2,startEndVertices[1]->vertex_->getY() -3*size/2 , size, size);
+            circleItemEnd = scene.addEllipse(circleRect, QPen(Qt::NoPen), QBrush(Qt::red));
+
+            QRectF circleRect1(startEndVertices[1]->vertex_->getX() -size/4,startEndVertices[1]->vertex_->getY() -3*size/2 +size/4, size/2, size/2);
+            circleItem1End = scene.addEllipse(circleRect1, QPen(Qt::NoPen), QBrush(Qt::white));
+
+        }
+
+    }
+
 }
 
 void View::setResetButtonEnabled()
@@ -285,23 +547,41 @@ void View::setupMatrix()
 
 void View::togglePointerMode()
 {
+    bool selectMode = selectModeButton->isChecked();
+    MyEllipseItem::SelectModeState = selectMode;
     graphicsView->setDragMode(selectModeButton->isChecked()
                               ? QGraphicsView::RubberBandDrag
                               : QGraphicsView::ScrollHandDrag);
     graphicsView->setInteractive(selectModeButton->isChecked());
 }
 
-void View::print()
-{
+void View::print() {
 #if defined(QT_PRINTSUPPORT_LIB) && QT_CONFIG(printdialog)
     QPrinter printer;
     QPrintDialog dialog(&printer, this);
     if (dialog.exec() == QDialog::Accepted) {
         QPainter painter(&printer);
-        graphicsView->render(&painter);
+        if (painter.begin(&printer)) {
+            graphicsView->render(&painter);
+            painter.end(); // End painting on the printer
+            if (printer.outputFormat() == QPrinter::PdfFormat) {
+                // Ensure PDF generation was successful
+                if (printer.outputFileName().isEmpty()) {
+                    QMessageBox::critical(this, "Error", "PDF file name is empty.");
+                } else {
+                    qDebug() << "PDF file saved to: " << printer.outputFileName();
+                }
+            }
+        } else {
+            QMessageBox::critical(this, "Error", "Could not start painting on the printer.");
+        }
+    } else {
+        QMessageBox::critical(this, "Error", "Print dialog not accepted");
     }
 #endif
 }
+
+
 
 void View::zoomIn()
 {
@@ -325,11 +605,17 @@ void View::zoomOutBy(int level)
 
 void View::zoomInAction()
 {
-    zoomInBy(50);
+    if (mapLoaded){
+        zoomInBy(50);
+    }
+
 }
 
 void View::zoomOutAction()
 {
-    zoomOutBy(50);
+    if (mapLoaded){
+        zoomOutBy(50);
+    }
+
 }
 

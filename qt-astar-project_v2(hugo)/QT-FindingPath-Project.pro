@@ -1,5 +1,5 @@
 RESOURCES += images.qrc
-RC_ICONS = ./Images/Manigo_logo.ico
+RC_ICONS = ./Images/PathFinder.ico
 HEADERS += mainwindow.h view.h \
     graph.h \
     vertex.h
