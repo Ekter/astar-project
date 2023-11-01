@@ -273,32 +273,32 @@ void View::drawMap(){
         scene.addLine(-10,this->size().height()+10 , this->size().width()+10, this->size().height()+10, QPen(Qt::gray));
 
         //scene.addItem(new QGraphicsEllipseItem(20,30,pointSize,pointSize));
-        qDebug() << "Vertices lenght "<< graph->vertices.size();
+        qDebug() << "Vertices lenght "<< graph->getSize();
         qDebug() << "x min boundaries "<< mapBoundaries.xMin;
         qDebug() << "x max boundaries "<< mapBoundaries.xMax;
         qDebug() << "y min boundaries "<< mapBoundaries.yMin;
         qDebug() << "y max boundaries "<< mapBoundaries.yMax;
 
 
-        if (!graph->vertices.empty()){
-            for (unsigned int i = 0; i < graph->vertices.size(); i++){
+        if (!graph->getVertices().empty()){
+            for (unsigned int i = 0; i < graph->getSize(); i++){
 
                progressBar.setValue(0.01*i);
 
-               progressBar.setValue(i*50/graph->vertices.size());
+               progressBar.setValue(i*50/graph->getSize());
                dialog.show();
                //QCoreApplication::processEvents();
 
                 //Convert the x and y to fit into the map view
 
-                double x_mapped = (graph->vertices[i].getX() - mapBoundaries.xMin) / (mapBoundaries.xMax - mapBoundaries.xMin) *this->size().width();
-                double y_mapped = (graph->vertices[i].getY() - mapBoundaries.yMin) / (mapBoundaries.yMax - mapBoundaries.yMin) * this->size().height();
+               //double x_mapped = (graph->getVertex(i).getX() - mapBoundaries.xMin) / (mapBoundaries.xMax - mapBoundaries.xMin) *this->size().width();
+              // double y_mapped = (graph->getVertex(i).getY() - mapBoundaries.yMin) / (mapBoundaries.yMax - mapBoundaries.yMin) * this->size().height();
 
-                graph->vertices[i].setX(x_mapped);
-                graph->vertices[i].setY(y_mapped);
+               //graph->getVertex(i).setX(x_mapped);
+               //graph->getVertex(i).setY(y_mapped);
 
 
-                MyEllipseItem* vertex_display = new MyEllipseItem(graph->vertices[i],
+                MyEllipseItem* vertex_display = new MyEllipseItem(graph->getVertex(i),
                                                                   MyEllipseItem::pointSize,
                                                                   &scene
                     );
@@ -308,12 +308,12 @@ void View::drawMap(){
 
                 scene.addItem(vertex_display);
             }
-            for (unsigned int i = 0; i < graph->vertices.size(); i++){
+            for (unsigned int i = 0; i < graph->getSize(); i++){
                 //progressBar.setValue(i*50/graph->vertices.size());
                 //QCoreApplication::processEvents();
 
                 for (unsigned int j = 0; j < graph->edges.size(); j++){
-                    if (graph->vertices[i].getID()== graph->edges[j].source_vid){
+                   if (graph->getVertex(i).getID()== graph->edges[j].source_vid){
                         qDebug() << graph->edges[j].dest_vid;
 
 
