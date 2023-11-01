@@ -3,7 +3,8 @@
 Graph::Graph(int size)
 {
     vertices_.reserve(size);
-    weights_.reserve()
+    weights_.reserve(size);
+    estimates_.resize(size, NAN);
 }
 
 void Graph::addVertexToGraph(const Vertex &vertex)
@@ -32,6 +33,7 @@ std::vector<u_int32_t> Graph::astar(u_int32_t vstart, u_int32_t vend)
     std::set<u_int32_t> closed_set;
     std::vector<u_int32_t> traversal;
     setWeights(std::numeric_limits<u_int32_t>::max());
+    setEstimates(std::numeric_limits<u_int32_t>::max());
     // ID of the start vertex
     active_queue.push_back(vstart);
     do
@@ -55,21 +57,19 @@ std::vector<u_int32_t> Graph::astar(u_int32_t vstart, u_int32_t vend)
             if (std::find(active_queue.begin(), active_queue.end(), vnext) == active_queue.end())
             {
                 weights_[vnext] = g;
-
-                vnext.set_estimate(f);
+                setEstimate(vnext, f);
                 active_queue.push_back(vnext);
             }
-            else if (f < vnext.get_estimate())
+            else if (f < getEstimate(vnext))
             {
                 weights_[vnext] = g;
-                vnext.set_estimate(f);
+                setEstimate(vnext, f);
             }
-            std::partial_sort(active_queue.begin(), active_queue.begin() + 10, active_queue.end(), [this, vcurrent](const u_int32_t v1_id, const u_int32_t v2_id)
-                              { return distanceBetweenVertices(vcurrent, v1_id) < distanceBetweenVertices(vcurrent, v2_id); });
         }
         // the partial sort ensure that the vertex with the smallest estimate
         // is the first on the active_queue
-        active_queue.partial_sort_on_estimate();
+        std::partial_sort(active_queue.begin(), active_queue.begin() + 1, active_queue.end(), [this, vcurrent](const u_int32_t v1_id, const u_int32_t v2_id)
+                          { return getEstimate(v1_id) < getEstimate(v2_id); });
     } while (active_queue.size() != 0);
     {
         auto vcurrent = active_queue.front();
