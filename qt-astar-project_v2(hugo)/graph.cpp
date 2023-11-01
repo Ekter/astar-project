@@ -149,6 +149,7 @@ std::vector<uint32_t> Graph::bfs(uint32_t vstart, uint32_t vend)
             if (std::find(active_queue.begin(), active_queue.end(), vnext) == active_queue.end())
             {
                 active_queue.push_back(vnext);
+                traversal.push_back(vcurrent);
             }
         }
     } while (!active_queue.empty());

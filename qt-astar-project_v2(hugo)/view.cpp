@@ -67,13 +67,10 @@ void GraphicsView::mousePressEvent(QMouseEvent *event) {
 
                        double distance = std::sqrt(deltaX * deltaX + deltaY * deltaY);
 
-                       //qDebug() << "Distance2 to vertex " << vertices_display[i]->vertex_->getID() << ": " << distance;
-
 
                        if (distance < minDistance) {
                            minDistance = distance;
                            closestVertex = vertices_display[i];
-                           qDebug() << "Selected closest vertex " << vertices_display[i]->vertex_->getID();
                        }
                    }
 
@@ -148,7 +145,13 @@ void View::runFindPath(void){
                qDebug()<< "size path" << path.size();
                vertices_display[path[i]]->setBrush(MyEllipseItem::startEndBrush);
            }
-       } else if (selectedOption == "other"){
+       } else if (selectedOption == "dijkstra"){
+           std::vector<uint32_t> path =  graph->dijkstra(startEndVertices[0]->vertex_->getID(),startEndVertices[1]->vertex_->getID());
+           for (unsigned int i=0; i<path.size(); i++){
+               qDebug()<< path[i];
+               qDebug()<< "size path" << path.size();
+               vertices_display[path[i]]->setBrush(MyEllipseItem::startEndBrush);
+           }
        }
     }
 
@@ -157,8 +160,8 @@ void View::runFindPath(void){
 
 
 void View::handleAlgorithmsSelection(int index){
-    selectedOption = combo->itemText(index);;
-    qDebug() << "Selected option: " << selectedOption;
+    selectedOption = combo->currentText();
+    //qDebug() << "Selected option: " << selectedOption;
 }
 
 View::View(const QString &name, QWidget *parent)
@@ -214,7 +217,7 @@ View::View(const QString &name, QWidget *parent)
 
     combo->setGeometry(20, 20, 200, 30);
 
-    combo->addItems({"Astar", "BFS", "Option 3"});
+    combo->addItems({"Astar", "BFS", "dijkstra"});
 
     printButton = new QToolButton;
     printButton->setIcon(QIcon(QPixmap(":/Images/fileprint.png")));
@@ -240,7 +243,7 @@ View::View(const QString &name, QWidget *parent)
     topLayout->addWidget(graphicsView, 1, 0);
     setLayout(topLayout);
 
-    //connect(combo, SIGNAL(currentIndexChanged(int)), this, SLOT(handleAlgorithmsSelection(int)));
+    connect(combo, SIGNAL(currentIndexChanged(int)), this, SLOT(handleAlgorithmsSelection(int)));
     connect(resetButton, &QAbstractButton::clicked, this, &View::resetView);
     connect(zoomSlider, &QAbstractSlider::valueChanged, this, &View::setupMatrix);
     connect(graphicsView->verticalScrollBar(), &QAbstractSlider::valueChanged,
