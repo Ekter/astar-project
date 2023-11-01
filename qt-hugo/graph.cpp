@@ -1,5 +1,6 @@
 #include "graph.h"
 #include "utils.h"
+#include <queue>
 
 Graph::Graph(QWidget *parent) : QWidget(parent), gridSize(5)
 {
@@ -268,23 +269,32 @@ active_queue.partial_sort();
 } while (active_queue.size() != 0)
 }
 
+
+
 Graph::bfs(uint32_t vstart) {
-container<uint32_t> active_queue;
+queue<uint32_t> active_queue;
 set<uint32_t> closed_set;
+vector<uint32_t> traversal;
+
 // ID of the start vertex
-active_queue.push_end(vstart);
+active_queue.push(vstart);
 do {
 // from the current vertex in the front of the queue
 // compute all vertices reachable in 1 step
-auto vcurrent = active_queue.pop_front();
+auto vcurrent = active_queue.pop();
 closed_set.add(vcurrent);
 for(vnext in adjacency_list of vcurrent) {
-if (vnext is in closed_set) {
+if (const bool is_in = closed_set.contains(vnext)) {
 continue;
 }
 if (vnext is not already in active_queue) {
-active_queue.push_end(vnext);
+active_queue.push(vnext);
 }
 }
-} while (active_queue.size() != 0)
+} while (active_queue.size() != 0){
+        vcurrent = active_queue.front();
+        active_queue.pop();
+        traversal.push_back(vcurrent);
+}
+return traversal;
 }
